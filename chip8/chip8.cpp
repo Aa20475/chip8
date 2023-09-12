@@ -3,13 +3,13 @@
 
 #include "chip8.h"
 #include "system.h"
+#include "SDL.h"
+#include "iostream"
 
 using namespace std;
 
-int main()
+int main(int argc, char* args[])
 {
-
-	System* system = new System();
-	cout << "Hello CMake." << endl;
+	System system = System();
 	return 0;
 }

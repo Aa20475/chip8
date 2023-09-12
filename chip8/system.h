@@ -2,6 +2,7 @@
 
 #include<stack>
 #include<stdexcept>
+#include "display.h"
 
 class System {
 
@@ -19,6 +20,8 @@ class System {
 	uint8_t sound_timer;
 	// general-purpose registers
 	uint8_t registers[16];
+
+	Display* display;
 
 public:
 	// Default constructor

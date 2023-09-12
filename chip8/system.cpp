@@ -1,8 +1,12 @@
 #include<system.h>
+#include<iostream>
 
 System::System() : delay_timer(0), sound_timer(0), pc(NULL), i_register(NULL) {
+	std::cout << "Initializing System... " << std::endl;
 	memory = (uint8_t*)malloc(4096);
 	i_register = malloc(2);
+
+	display = new Display();
 
 	for (int i = 0; i < 16; i++) {
 		registers[i] = 0;
