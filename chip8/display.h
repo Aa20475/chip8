@@ -9,7 +9,11 @@ class Display {
 	int pixel_size;
 	int width, height;
 
+	bool** pixels;
+
 public:
 	Display();
 	~Display();
+
+	void clear_screen();
 };

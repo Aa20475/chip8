@@ -1,5 +1,8 @@
 #include<system.h>
 #include<iostream>
+#include<fstream>
+#include<string>
+#include<stdexcept>
 
 System::System() : delay_timer(0), sound_timer(0), pc(NULL), i_register(NULL) {
 	std::cout << "Initializing System... " << std::endl;
@@ -39,4 +42,21 @@ System::System() : delay_timer(0), sound_timer(0), pc(NULL), i_register(NULL) {
 void System::write_to_memory(uint16_t address, uint8_t value) {
 	if (address >> 12)throw std::invalid_argument("Address needs to be 12-bit");
 	*(memory + address) = value;
+}
+
+bool System::file_exists(const char* file_path) {
+	return std::ifstream(file_path).good();
+}
+
+void System::read_rom_to_memory(const char* path_to_rom, uint16_t offset) {
+	if (!file_exists(path_to_rom))throw std::invalid_argument("ROM " + std::string(path_to_rom) + " does not exist!");
+	std::ifstream rom_file(path_to_rom, std::ios::in | std::ios::binary);
+	char data[1];
+	int position = offset;
+	while (rom_file.read(data, 1)) {
+		write_to_memory(position, (uint8_t) data[0]);
+		position++;
+	}
+	std::cout << "Wrote " << position << " bytes." << std::endl;
+	rom_file.close();
 }

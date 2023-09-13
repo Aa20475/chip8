@@ -23,10 +23,16 @@ class System {
 
 	Display* display;
 
+	// check if file exists
+	bool file_exists(const char* file_path);
+
 public:
 	// Default constructor
 	System();
 
 	// Writes a given byte to memory location
 	void write_to_memory(uint16_t address, uint8_t value);
+
+	// Read rom
+	void read_rom_to_memory(const char* path_to_rom, uint16_t offset=0x200);
 };
