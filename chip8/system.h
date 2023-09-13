@@ -11,7 +11,7 @@ class System {
 	// current instruction offset in memory
 	uint16_t pc;
 	// 16 bit I register
-	void* i_register;
+	uint16_t i_register;
 	// stack for 16 bit addresses
 	std::stack<uint16_t> stack;
 	// 8-bit delay timer
@@ -36,6 +36,26 @@ class System {
 	void x1NNN(uint16_t instruction, bool& done);
 	// 2NNN instructions
 	void x2NNN(uint16_t instruction, bool& done);
+	// 3XNN instructions
+	void x3NNN(uint16_t instruction, bool& done);
+	// 4XNN instructions
+	void x4NNN(uint16_t instruction, bool& done);
+	// 5XNN instructions
+	void x5NNN(uint16_t instruction, bool& done);
+	// 6XNN instructions
+	void x6NNN(uint16_t instruction, bool& done);
+	// 7XNN instructions
+	void x7NNN(uint16_t instruction, bool& done);
+	// 8XNN instructions
+	void x8NNN(uint16_t instruction, bool& done);
+	// 9XNN instructions
+	void x9NNN(uint16_t instruction, bool& done);
+	// ANNN instructions
+	void xANNN(uint16_t instruction, bool& done);
+	// BNNN instructions
+	void xBNNN(uint16_t instruction, bool& done);
+	// CNNN instructions
+	void xCNNN(uint16_t instruction, bool& done);
 
 public:
 	// Default constructor

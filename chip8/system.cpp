@@ -3,8 +3,9 @@
 #include<fstream>
 #include<string>
 #include<stdexcept>
+#include <stdlib.h>
 
-System::System() : delay_timer(0), sound_timer(0), pc(0), i_register(NULL), rom_loaded(false) {
+System::System() : delay_timer(0), sound_timer(0), pc(0), i_register(0), rom_loaded(false) {
 	std::cout << "Initializing System... " << std::endl;
 	memory = (uint8_t*)malloc(4096);
 	i_register = malloc(2);
@@ -79,6 +80,115 @@ void System::x2NNN(uint16_t instruction, bool& done) {
 	pc = instruction & 0x0FFF;
 }
 
+void System::x3NNN(uint16_t instruction, bool& done) {
+	uint8_t nibbles[4];
+	extract_nibbles(instruction, nibbles);
+	if(registers[nibbles[1]] == ((uint16_t)nibbles[2] << 8) + nibbles[3]){
+		pc += 2;
+	}
+}
+
+void System::x4NNN(uint16_t instruction, bool& done) {
+	uint8_t nibbles[4];
+	extract_nibbles(instruction, nibbles);
+	if (registers[nibbles[1]] != ((uint16_t)nibbles[2] << 8) + nibbles[3]) {
+		pc += 2;
+	}
+}
+
+void System::x5NNN(uint16_t instruction, bool& done) {
+	uint8_t nibbles[4];
+	extract_nibbles(instruction, nibbles);
+
+	if (nibbles[3] == 0) {
+		if (registers[nibbles[1]] == registers[nibbles[2]]) {
+			pc += 2;
+		}
+	}
+}
+
+void System::x6NNN(uint16_t instruction, bool& done) {
+	uint8_t nibbles[4];
+	extract_nibbles(instruction, nibbles);
+	registers[nibbles[1]] = ((uint16_t)nibbles[2] << 8) + nibbles[3];
+}
+
+void System::x7NNN(uint16_t instruction, bool& done) {
+	uint8_t nibbles[4];
+	extract_nibbles(instruction, nibbles);
+	registers[nibbles[1]] += ((uint16_t)nibbles[2] << 8) + nibbles[3];
+}
+
+void System::x8NNN(uint16_t instruction, bool& done) {
+	uint8_t nibbles[4];
+	extract_nibbles(instruction, nibbles);
+
+	uint8_t* vx = &registers[nibbles[1]];
+	uint8_t* vy = &registers[nibbles[2]];
+	switch (nibbles[3]) {
+	case 0:
+		*vx = *vy;
+		break;
+	case 1:
+		*vx = *vx | *vy;
+		break;
+	case 2:
+		*vx = *vx & *vy;
+		break;
+	case 3:
+		*vx = *vx ^ *vy;
+		break;
+	case 4:
+		uint16_t value = *vx + *vy;
+		registers[15] = value > 255;
+		*vx = value;
+		break;
+	case 5:
+		registers[15] = *vx > *vy;
+		*vx -= *vy;
+		break;
+	case 6:
+		registers[15] = *vx & 1;
+		*vx >>= 1;
+		break;
+	case 7:
+		registers[15] = *vy > *vx;
+		*vx = *vy - *vx;
+		break;
+	case 8:
+		registers[15] = *vx & 0x70;
+		*vx <<= 1;
+		break;
+	}
+}
+
+void System::x9NNN(uint16_t instruction, bool& done) {
+	uint8_t nibbles[4];
+	extract_nibbles(instruction, nibbles);
+
+	if (nibbles[3] == 0) {
+		if (registers[nibbles[1]] != registers[nibbles[2]]) {
+			pc += 2;
+		}
+	}
+}
+
+void System::xANNN(uint16_t instruction, bool& done) {
+	i_register = instruction & 0x0FFF;
+}
+
+void System::xBNNN(uint16_t instruction, bool& done) {
+	pc = (instruction & 0x0FFF) + registers[0];
+}
+
+void System::xCNNN(uint16_t instruction, bool& done) {
+	uint8_t nibbles[4];
+	extract_nibbles(instruction, nibbles);
+	
+	registers[nibbles[1]] = rand();
+	registers[nibbles[1]] &= ((uint16_t)nibbles[2] << 8) + nibbles[3];
+}
+
 void System::read_rom_to_memory(const char* path_to_rom, uint16_t offset) {
 	if (!file_exists(path_to_rom))throw std::invalid_argument("ROM " + std::string(path_to_rom) + " does not exist!");
 	std::ifstream rom_file(path_to_rom, std::ios::in | std::ios::binary);
@@ -120,6 +230,37 @@ void System::run() {
 			break;
 		case 2:
 			x2NNN(full_instruction, done);
+			break;
+		case 3:
+			x3NNN(full_instruction, done);
+			break;
+		case 4:
+			x4NNN(full_instruction, done);
+			break;
+		case 5:
+			x5NNN(full_instruction, done);
+			break;
+		case 6:
+			x6NNN(full_instruction, done);
+			break;
+		case 7:
+			x7NNN(full_instruction, done);
+			break;
+		case 8:
+			x8NNN(full_instruction, done);
+			break;
+		case 9:
+			x9NNN(full_instruction, done);
+			break;
+		case 0xA:
+			xANNN(full_instruction, done);
+			break;
+		case 0xB:
+			xBNNN(full_instruction, done);
+			break;
+		case 0xC:
+			xCNNN(full_instruction, done);
+			break;
 		}
 
 	}
