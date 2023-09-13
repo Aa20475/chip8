@@ -25,9 +25,7 @@ Display::Display() : pixel_size(5), width(64), height(32) {
     // Initialize renderer
     renderer = SDL_CreateRenderer(window, -1, 0);
     // Initialise Pixel array
-    pixels = new bool*[height];   
-    for (int i = 0; i < height; i++) { 
-        pixels[i] = new bool[width];
+    for (int i = 0; i < height; i++){
         for (int j = 0; j < width; j++) {
             pixels[i][j] = false;
         }
@@ -38,6 +36,33 @@ void Display::clear_screen() {
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < width; j++) {
             pixels[i][j] = false;
+        }
+    }
+}
+
+bool Display::set_pixel(int x, int y, bool bit) {
+    bool curr_bit = pixels[y][x];
+    if (bit) {
+        pixels[y][x] = !curr_bit;
+        return curr_bit;
+    }
+    return false;
+}
+
+void Display::draw() {
+    SDL_RenderClear(renderer);
+    SDL_Rect rect;
+
+    rect.w = pixel_size;
+    rect.h = pixel_size;
+
+    SDL_SetRenderDrawColor(renderer, 0,0,0,255);
+
+    for (int x = 0; x < 64; x++) {
+        for (int y = 0; y < 32; y++) {
+            rect.x = x * pixel_size;
+            rect.y = y * pixel_size;
+            if(pixels[y][x])SDL_RenderDrawRect(renderer, &rect);
         }
     }
 }

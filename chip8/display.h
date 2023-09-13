@@ -9,11 +9,15 @@ class Display {
 	int pixel_size;
 	int width, height;
 
-	bool** pixels;
+	bool pixels[32][64];
 
 public:
 	Display();
 	~Display();
 
 	void clear_screen();
+	
+	bool set_pixel(int x, int y, bool bit);
+
+	void draw();
 };

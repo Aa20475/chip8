@@ -56,6 +56,8 @@ class System {
 	void xBNNN(uint16_t instruction, bool& done);
 	// CNNN instructions
 	void xCNNN(uint16_t instruction, bool& done);
+	// DNNN instructions
+	void xDNNN(uint16_t instruction, bool& done);
 
 public:
 	// Default constructor

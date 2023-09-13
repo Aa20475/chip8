@@ -8,7 +8,6 @@
 System::System() : delay_timer(0), sound_timer(0), pc(0), i_register(0), rom_loaded(false) {
 	std::cout << "Initializing System... " << std::endl;
 	memory = (uint8_t*)malloc(4096);
-	i_register = malloc(2);
 
 	display = new Display();
 
@@ -125,6 +124,7 @@ void System::x8NNN(uint16_t instruction, bool& done) {
 
 	uint8_t* vx = &registers[nibbles[1]];
 	uint8_t* vy = &registers[nibbles[2]];
+	uint16_t value = *vx + *vy;
 	switch (nibbles[3]) {
 	case 0:
 		*vx = *vy;
@@ -139,7 +139,6 @@ void System::x8NNN(uint16_t instruction, bool& done) {
 		*vx = *vx ^ *vy;
 		break;
 	case 4:
-		uint16_t value = *vx + *vy;
 		registers[15] = value > 255;
 		*vx = value;
 		break;
@@ -189,6 +188,24 @@ void System::xCNNN(uint16_t instruction, bool& done) {
 	registers[nibbles[1]] &= ((uint16_t)nibbles[2] << 8) + nibbles[3];
 }
 
+void System::xDNNN(uint16_t instruction, bool& done) {
+	uint8_t nibbles[4];
+	extract_nibbles(instruction, nibbles);
+
+	uint8_t x_coordinate = registers[nibbles[1]] & 63, y_coordinate = registers[nibbles[2]] & 31;
+	registers[15] = 0;
+	uint16_t offset = i_register;
+	for (int i = 0; i < nibbles[3]; i++) {
+		uint8_t pixel_info = *(memory + offset);
+		for (int j = 7; j >= 0; j--) {
+			bool bit = pixel_info & 1;
+			pixel_info >>= 1;
+			if (x_coordinate + i >= 64 || y_coordinate + j >= 32)continue;
+			registers[15] = display->set_pixel(x_coordinate + i, y_coordinate + j, bit);
+		}
+	}
+}
+
 void System::read_rom_to_memory(const char* path_to_rom, uint16_t offset) {
 	if (!file_exists(path_to_rom))throw std::invalid_argument("ROM " + std::string(path_to_rom) + " does not exist!");
 	std::ifstream rom_file(path_to_rom, std::ios::in | std::ios::binary);
@@ -224,6 +241,7 @@ void System::run() {
 		switch (nibbles[0]) {
 		case 0:
 			x0NNN(full_instruction, done);
+			display->draw();
 			break;
 		case 1:
 			x1NNN(full_instruction, done);
@@ -260,6 +278,10 @@ void System::run() {
 			break;
 		case 0xC:
 			xCNNN(full_instruction, done);
+			break;
+		case 0xD:
+			xDNNN(full_instruction, done);
+			display->draw();
 			break;
 		}
 
