@@ -24,6 +24,7 @@ class System {
 	Display* display;
 
 	bool rom_loaded;
+	bool modern_chip8;
 
 	// check if file exists
 	bool file_exists(const char* file_path);

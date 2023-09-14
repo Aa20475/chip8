@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <chrono>
 
-System::System() : delay_timer(0), sound_timer(0), pc(0), i_register(0), rom_loaded(false) {
+System::System() : delay_timer(0), sound_timer(0), pc(0), i_register(0), rom_loaded(false), modern_chip8(false) {
 	std::cout << "Initializing System... " << std::endl;
 	memory = (uint8_t*)malloc(4096);
 
@@ -148,6 +148,7 @@ void System::x8NNN(uint16_t instruction, bool& done) {
 		*vx -= *vy;
 		break;
 	case 6:
+		if (!modern_chip8) *vx = *vy;
 		registers[15] = *vx & 1;
 		*vx >>= 1;
 		break;
@@ -155,7 +156,8 @@ void System::x8NNN(uint16_t instruction, bool& done) {
 		registers[15] = *vy > *vx;
 		*vx = *vy - *vx;
 		break;
-	case 8:
+	case 0xE:
+		if (!modern_chip8) *vx = *vy;
 		registers[15] = *vx & 0x70;
 		*vx <<= 1;
 		break;
@@ -178,7 +180,8 @@ void System::xANNN(uint16_t instruction, bool& done) {
 }
 
 void System::xBNNN(uint16_t instruction, bool& done) {
-	pc = (instruction & 0x0FFF) + registers[0];
+	if (!modern_chip8) pc = (instruction & 0x0FFF) + registers[0];
+	else pc = (instruction & 0x0FFF) + registers[(instruction & 0x0F00) >> 8];
 }
 
 void System::xCNNN(uint16_t instruction, bool& done) {
@@ -197,12 +200,12 @@ void System::xDNNN(uint16_t instruction, bool& done) {
 	registers[15] = 0;
 	uint16_t offset = i_register;
 	for (int i = 0; i < nibbles[3]; i++) {
-		uint8_t pixel_info = *(memory + offset);
+		uint8_t pixel_info = *(memory + offset + i);
 		for (int j = 7; j >= 0; j--) {
 			bool bit = pixel_info & 1;
 			pixel_info >>= 1;
-			if (x_coordinate + i >= 64 || y_coordinate + j >= 32)continue;
-			registers[15] = display->set_pixel(x_coordinate + i, y_coordinate + j, bit);
+			if (x_coordinate + j >= 64 || y_coordinate + i >= 32)continue;
+			registers[15] = display->set_pixel(x_coordinate + j, y_coordinate + i, bit);
 		}
 	}
 }
@@ -286,6 +289,8 @@ void System::run() {
 				case 0xD:
 					xDNNN(full_instruction, done);
 					break;
+				default:
+					std::cout << "Not implemented" << std::endl;
 				}
 				instruction_count++;
 			}
