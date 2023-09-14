@@ -4,6 +4,7 @@
 #include<string>
 #include<stdexcept>
 #include <stdlib.h>
+#include <chrono>
 
 System::System() : delay_timer(0), sound_timer(0), pc(0), i_register(0), rom_loaded(false) {
 	std::cout << "Initializing System... " << std::endl;
@@ -230,60 +231,68 @@ void System::run() {
 			done = true;
 			continue;
 		}
-		uint16_t full_instruction = ((uint16_t)read_from_memory(pc) << 8) + read_from_memory(pc + 1);
-		// increment PC by 2
-		pc += 2;
+		for (int frame = 0; frame < 60; frame++) {
+			int instruction_count = 0;
+			auto start = std::chrono::high_resolution_clock::now();
+			while (instruction_count < 12) {
+				done = display->handle_events();
 
+				uint16_t full_instruction = ((uint16_t)read_from_memory(pc) << 8) + read_from_memory(pc + 1);
+				// increment PC by 2
+				pc += 2;
+				uint8_t nibbles[4];
+				extract_nibbles(full_instruction, nibbles);
 
-		uint8_t nibbles[4];
-		extract_nibbles(full_instruction, nibbles);
-
-		switch (nibbles[0]) {
-		case 0:
-			x0NNN(full_instruction, done);
+				switch (nibbles[0]) {
+				case 0:
+					x0NNN(full_instruction, done);
+					break;
+				case 1:
+					x1NNN(full_instruction, done);
+					break;
+				case 2:
+					x2NNN(full_instruction, done);
+					break;
+				case 3:
+					x3NNN(full_instruction, done);
+					break;
+				case 4:
+					x4NNN(full_instruction, done);
+					break;
+				case 5:
+					x5NNN(full_instruction, done);
+					break;
+				case 6:
+					x6NNN(full_instruction, done);
+					break;
+				case 7:
+					x7NNN(full_instruction, done);
+					break;
+				case 8:
+					x8NNN(full_instruction, done);
+					break;
+				case 9:
+					x9NNN(full_instruction, done);
+					break;
+				case 0xA:
+					xANNN(full_instruction, done);
+					break;
+				case 0xB:
+					xBNNN(full_instruction, done);
+					break;
+				case 0xC:
+					xCNNN(full_instruction, done);
+					break;
+				case 0xD:
+					xDNNN(full_instruction, done);
+					break;
+				}
+				instruction_count++;
+			}
+			auto stop = std::chrono::high_resolution_clock::now();
+			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
+			SDL_Delay(int(1000/60) - duration.count());
 			display->draw();
-			break;
-		case 1:
-			x1NNN(full_instruction, done);
-			break;
-		case 2:
-			x2NNN(full_instruction, done);
-			break;
-		case 3:
-			x3NNN(full_instruction, done);
-			break;
-		case 4:
-			x4NNN(full_instruction, done);
-			break;
-		case 5:
-			x5NNN(full_instruction, done);
-			break;
-		case 6:
-			x6NNN(full_instruction, done);
-			break;
-		case 7:
-			x7NNN(full_instruction, done);
-			break;
-		case 8:
-			x8NNN(full_instruction, done);
-			break;
-		case 9:
-			x9NNN(full_instruction, done);
-			break;
-		case 0xA:
-			xANNN(full_instruction, done);
-			break;
-		case 0xB:
-			xBNNN(full_instruction, done);
-			break;
-		case 0xC:
-			xCNNN(full_instruction, done);
-			break;
-		case 0xD:
-			xDNNN(full_instruction, done);
-			display->draw();
-			break;
 		}
-
 	}
 }

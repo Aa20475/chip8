@@ -56,13 +56,29 @@ void Display::draw() {
     rect.w = pixel_size;
     rect.h = pixel_size;
 
-    SDL_SetRenderDrawColor(renderer, 0,0,0,255);
+    SDL_SetRenderDrawColor(renderer, 255,255,255,255);
 
     for (int x = 0; x < 64; x++) {
         for (int y = 0; y < 32; y++) {
             rect.x = x * pixel_size;
             rect.y = y * pixel_size;
-            if(pixels[y][x])SDL_RenderDrawRect(renderer, &rect);
+            if(pixels[y][x])SDL_RenderFillRect(renderer, &rect);
         }
     }
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_RenderPresent(renderer);
+}
+
+bool Display::handle_events() {
+    SDL_Event event;
+    bool quit = false;
+    while (SDL_PollEvent(&event)) {
+        /* handle your event here */
+
+       //User requests quit
+        if (event.type == SDL_QUIT)
+            quit = true;
+    }
+
+    return quit;
 }

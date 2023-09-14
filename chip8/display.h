@@ -20,4 +20,6 @@ public:
 	bool set_pixel(int x, int y, bool bit);
 
 	void draw();
+
+	bool handle_events();
 };
