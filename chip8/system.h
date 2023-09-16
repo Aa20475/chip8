@@ -64,6 +64,8 @@ class System {
 	// ENNN instructions
 	void xENNN(uint16_t instruction, bool& done);
 
+	void handle_instruction(uint16_t instruction, bool& done);
+
 public:
 	// Default constructor
 	System();

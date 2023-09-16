@@ -239,84 +239,97 @@ void System::read_rom_to_memory(const char* path_to_rom, uint16_t offset) {
 	rom_loaded = true;
 }
 
+void System::handle_instruction(uint16_t full_instruction, bool& done) {
+	uint8_t nibbles[4];
+	extract_nibbles(full_instruction, nibbles);
+
+	switch (nibbles[0]) {
+	case 0:
+		x0NNN(full_instruction, done);
+		break;
+	case 1:
+		x1NNN(full_instruction, done);
+		break;
+	case 2:
+		x2NNN(full_instruction, done);
+		break;
+	case 3:
+		x3NNN(full_instruction, done);
+		break;
+	case 4:
+		x4NNN(full_instruction, done);
+		break;
+	case 5:
+		x5NNN(full_instruction, done);
+		break;
+	case 6:
+		x6NNN(full_instruction, done);
+		break;
+	case 7:
+		x7NNN(full_instruction, done);
+		break;
+	case 8:
+		x8NNN(full_instruction, done);
+		break;
+	case 9:
+		x9NNN(full_instruction, done);
+		break;
+	case 0xA:
+		xANNN(full_instruction, done);
+		break;
+	case 0xB:
+		xBNNN(full_instruction, done);
+		break;
+	case 0xC:
+		xCNNN(full_instruction, done);
+		break;
+	case 0xD:
+		xDNNN(full_instruction, done);
+		break;
+	case 0xE:
+		xENNN(full_instruction, done);
+		break;
+	default:
+		std::cout << "Not implemented" << std::endl;
+	}
+}
+
 
 void System::run() {
 	pc = 0x200;
 	if (!rom_loaded)throw std::logic_error("Load ROM before running.");
 	bool done = false;
+	
+	const int fps = 60;
+	const int time_per_frame = 1000.0 / fps;
+	const int instructions_per_second = 500;
+	const int instructions_per_frame = 60;
+
+
+
+
 	while (!done) {
 		if (pc > 0x0FFF) {
 			done = true;
 			continue;
 		}
+		int instruction_count = 0;
+
 		auto start = std::chrono::high_resolution_clock::now();
-		for (int frame = 0; frame < 60; frame++) {
-			int instruction_count = 0;
+		done = display->handle_events(key_info);
+		while (instruction_count < instructions_per_frame) {
 
-			while (instruction_count < 8) {
-				done = display->handle_events(key_info);
-
-				uint16_t full_instruction = ((uint16_t)read_from_memory(pc) << 8) + read_from_memory(pc + 1);
-				// increment PC by 2
-				pc += 2;
-				uint8_t nibbles[4];
-				extract_nibbles(full_instruction, nibbles);
-
-				switch (nibbles[0]) {
-				case 0:
-					x0NNN(full_instruction, done);
-					break;
-				case 1:
-					x1NNN(full_instruction, done);
-					break;
-				case 2:
-					x2NNN(full_instruction, done);
-					break;
-				case 3:
-					x3NNN(full_instruction, done);
-					break;
-				case 4:
-					x4NNN(full_instruction, done);
-					break;
-				case 5:
-					x5NNN(full_instruction, done);
-					break;
-				case 6:
-					x6NNN(full_instruction, done);
-					break;
-				case 7:
-					x7NNN(full_instruction, done);
-					break;
-				case 8:
-					x8NNN(full_instruction, done);
-					break;
-				case 9:
-					x9NNN(full_instruction, done);
-					break;
-				case 0xA:
-					xANNN(full_instruction, done);
-					break;
-				case 0xB:
-					xBNNN(full_instruction, done);
-					break;
-				case 0xC:
-					xCNNN(full_instruction, done);
-					break;
-				case 0xD:
-					xDNNN(full_instruction, done);
-					break;
-				case 0xE:
-					xENNN(full_instruction, done);
-					break;
-				default:
-					std::cout << "Not implemented" << std::endl;
-				}
-				instruction_count++;
-			}
+			uint16_t full_instruction = ((uint16_t)read_from_memory(pc) << 8) + read_from_memory(pc + 1);
+			// increment PC by 2
+			pc += 2;
+			handle_instruction(full_instruction, done);
 			display->draw();
+			instruction_count++;
 		}
 		auto stop = std::chrono::high_resolution_clock::now();
 		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
-		SDL_Delay(1000 - duration.count());
+		if (duration.count() < time_per_frame) {
+			SDL_Delay(time_per_frame - duration.count());
+		}
 	}
 }

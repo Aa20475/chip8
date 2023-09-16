@@ -23,7 +23,7 @@ Display::Display() : pixel_size(5), width(64), height(32) {
     }
 
     // Initialize renderer
-    renderer = SDL_CreateRenderer(window, -1, 0);
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     // Initialise Pixel array
     for (int i = 0; i < height; i++){
         for (int j = 0; j < width; j++) {
