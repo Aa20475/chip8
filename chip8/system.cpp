@@ -141,7 +141,7 @@ void System::x8NNN(uint16_t instruction, bool& done) {
 		break;
 	case 4:
 		registers[15] = value > 255;
-		*vx = value;
+		*vx = (uint8_t) value;
 		break;
 	case 5:
 		registers[15] = *vx > *vy;
@@ -210,6 +210,21 @@ void System::xDNNN(uint16_t instruction, bool& done) {
 	}
 }
 
+void System::xENNN(uint16_t instruction, bool& done) {
+	uint8_t nibbles[4];
+	extract_nibbles(instruction, nibbles);
+
+	if (nibbles[2] == 9 && nibbles[3] == 0xE) {
+		if (key_info[registers[nibbles[1]]]) {
+			pc += 2;
+		}
+	}else if(nibbles[2] == 0xA && nibbles[3] == 1) {
+		if (!key_info[registers[nibbles[1]]]) {
+			pc += 2;
+		}
+	}
+}
+
 void System::read_rom_to_memory(const char* path_to_rom, uint16_t offset) {
 	if (!file_exists(path_to_rom))throw std::invalid_argument("ROM " + std::string(path_to_rom) + " does not exist!");
 	std::ifstream rom_file(path_to_rom, std::ios::in | std::ios::binary);
@@ -234,11 +249,12 @@ void System::run() {
 			done = true;
 			continue;
 		}
+		auto start = std::chrono::high_resolution_clock::now();
 		for (int frame = 0; frame < 60; frame++) {
 			int instruction_count = 0;
-			auto start = std::chrono::high_resolution_clock::now();
-			while (instruction_count < 12) {
-				done = display->handle_events();
+
+			while (instruction_count < 8) {
+				done = display->handle_events(key_info);
 
 				uint16_t full_instruction = ((uint16_t)read_from_memory(pc) << 8) + read_from_memory(pc + 1);
 				// increment PC by 2
@@ -289,15 +305,18 @@ void System::run() {
 				case 0xD:
 					xDNNN(full_instruction, done);
 					break;
+				case 0xE:
+					xENNN(full_instruction, done);
+					break;
 				default:
 					std::cout << "Not implemented" << std::endl;
 				}
 				instruction_count++;
 			}
-			auto stop = std::chrono::high_resolution_clock::now();
-			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
-			SDL_Delay(int(1000/60) - duration.count());
 			display->draw();
 		}
+		auto stop = std::chrono::high_resolution_clock::now();
+		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
+		SDL_Delay(1000 - duration.count());
 	}
 }

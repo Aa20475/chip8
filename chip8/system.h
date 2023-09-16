@@ -20,6 +20,8 @@ class System {
 	uint8_t sound_timer;
 	// general-purpose registers
 	uint8_t registers[16];
+	// Hold key press infos
+	bool key_info[16];
 
 	Display* display;
 
@@ -59,6 +61,8 @@ class System {
 	void xCNNN(uint16_t instruction, bool& done);
 	// DNNN instructions
 	void xDNNN(uint16_t instruction, bool& done);
+	// ENNN instructions
+	void xENNN(uint16_t instruction, bool& done);
 
 public:
 	// Default constructor

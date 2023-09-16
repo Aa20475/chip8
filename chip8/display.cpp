@@ -69,15 +69,27 @@ void Display::draw() {
     SDL_RenderPresent(renderer);
 }
 
-bool Display::handle_events() {
+bool Display::handle_events(bool (&key_info)[16]) {
     SDL_Event event;
     bool quit = false;
     while (SDL_PollEvent(&event)) {
-        /* handle your event here */
-
+        
        //User requests quit
         if (event.type == SDL_QUIT)
             quit = true;
+        
+        if (event.type == SDL_KEYDOWN) {
+            if (key_map.contains(event.key.keysym.scancode)) {
+                std::cout << "Key " << key_map[event.key.keysym.scancode] << " down" << std::endl;
+                key_info[key_map[event.key.keysym.scancode]] = true;
+            }
+        }
+        if (event.type == SDL_KEYUP) {
+            if (key_map.contains(event.key.keysym.scancode)) {
+                std::cout << "Key " << key_map[event.key.keysym.scancode] << " up" << std::endl;
+                key_info[key_map[event.key.keysym.scancode]] = false;
+            }
+        }
     }
 
     return quit;
