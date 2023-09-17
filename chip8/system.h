@@ -27,6 +27,9 @@ class System {
 
 	bool rom_loaded;
 	bool modern_chip8;
+	
+	bool waiting_for_key;
+	int pressed_key;
 
 	// check if file exists
 	bool file_exists(const char* file_path);
@@ -63,6 +66,8 @@ class System {
 	void xDNNN(uint16_t instruction, bool& done);
 	// ENNN instructions
 	void xENNN(uint16_t instruction, bool& done);
+	// FNNN instructions
+	void xFNNN(uint16_t instruction, bool& done);
 
 	void handle_instruction(uint16_t instruction, bool& done);
 

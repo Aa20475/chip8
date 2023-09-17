@@ -6,7 +6,45 @@
 #include <stdlib.h>
 #include <chrono>
 
-System::System() : delay_timer(0), sound_timer(0), pc(0), i_register(0), rom_loaded(false), modern_chip8(false) {
+std::string decToHexa(int n)
+{
+	// ans std::string to store hexadecimal number
+	std::string ans = "";
+
+	while (n != 0) {
+		// remainder variable to store remainder
+		int rem = 0;
+
+		// ch variable to store each character
+		char ch;
+		// storing remainder in rem variable.
+		rem = n % 16;
+
+		// check if temp < 10
+		if (rem < 10) {
+			ch = rem + 48;
+		}
+		else {
+			ch = rem + 55;
+		}
+
+		// updating the ans std::string with the character variable
+		ans += ch;
+		n = n / 16;
+	}
+
+	// reversing the ans std::string to get the final result
+	int i = 0, j = ans.size() - 1;
+	while (i <= j)
+	{
+		std::swap(ans[i], ans[j]);
+		i++;
+		j--;
+	}
+	return ans;
+}
+
+System::System() : delay_timer(0), sound_timer(0), pc(0), i_register(0), rom_loaded(false), modern_chip8(true), waiting_for_key(false), pressed_key(-1) {
 	std::cout << "Initializing System... " << std::endl;
 	memory = (uint8_t*)malloc(4096);
 
@@ -225,6 +263,60 @@ void System::xENNN(uint16_t instruction, bool& done) {
 	}
 }
 
+void System::xFNNN(uint16_t instruction, bool& done) {
+	uint8_t nibbles[4];
+	extract_nibbles(instruction, nibbles);
+	if (nibbles[2] == 0 && nibbles[3] == 7) {
+		registers[nibbles[1]] = delay_timer;
+	}else if (nibbles[2] == 0 && nibbles[3] == 0xA) {
+		if (!waiting_for_key) {
+			if (pressed_key == -1) {
+				waiting_for_key = true;
+				pc -= 2;
+			}
+			else {
+				registers[nibbles[1]] = pressed_key;
+				pressed_key = -1;
+			}
+		}
+		else {
+			pc -= 2;
+		}
+	}
+	else if (nibbles[2] == 1 && nibbles[3] == 5) {
+		delay_timer = registers[nibbles[1]];
+	}
+	else if (nibbles[2] == 1 && nibbles[3] == 8) {
+		sound_timer = registers[nibbles[1]];
+	}
+	else if (nibbles[2] == 1 && nibbles[3] == 0xE) {
+		i_register += registers[nibbles[1]];
+		registers[15] = (i_register & 0xF000) != 0;
+	}
+	else if (nibbles[2] == 2 && nibbles[3] == 9) {
+		i_register = 0x005F + 5 * nibbles[1];
+	}
+	else if (nibbles[2] == 3 && nibbles[3] == 3) {
+		int number = registers[nibbles[1]];
+		write_to_memory(i_register, number % 10);
+		number /= 10;
+		write_to_memory(i_register + 1, number % 10);
+		number /= 10;
+		write_to_memory(i_register + 2, number % 10);
+		number /= 10;
+	}
+	else if (nibbles[3] == 5) {
+		for (int i = 0; i < nibbles[1]; i++) {
+			if (nibbles[2] == 5) {
+				write_to_memory(modern_chip8 ? i_register + i : i_register++, registers[i]);
+			}
+			else if (nibbles[2] == 6) {
+				registers[i] = read_from_memory(modern_chip8 ? i_register + i : i_register++);
+			}
+		}
+	}
+}
+
 void System::read_rom_to_memory(const char* path_to_rom, uint16_t offset) {
 	if (!file_exists(path_to_rom))throw std::invalid_argument("ROM " + std::string(path_to_rom) + " does not exist!");
 	std::ifstream rom_file(path_to_rom, std::ios::in | std::ios::binary);
@@ -243,6 +335,7 @@ void System::handle_instruction(uint16_t full_instruction, bool& done) {
 	uint8_t nibbles[4];
 	extract_nibbles(full_instruction, nibbles);
 
+	std::cout << decToHexa(full_instruction) << std::endl;
 	switch (nibbles[0]) {
 	case 0:
 		x0NNN(full_instruction, done);
@@ -289,8 +382,11 @@ void System::handle_instruction(uint16_t full_instruction, bool& done) {
 	case 0xE:
 		xENNN(full_instruction, done);
 		break;
+	case 0xF:
+		xFNNN(full_instruction, done);
+		break;
 	default:
-		std::cout << "Not implemented" << std::endl;
+		std::cout << decToHexa(full_instruction) << " not implemented " << std::endl;
 	}
 }
 
@@ -301,12 +397,9 @@ void System::run() {
 	bool done = false;
 	
 	const int fps = 60;
-	const int time_per_frame = 1000.0 / fps;
+	const int time_per_frame = 1000 / fps;
 	const int instructions_per_second = 500;
 	const int instructions_per_frame = 60;
-
-
-
 
 	while (!done) {
 		if (pc > 0x0FFF) {
@@ -316,9 +409,8 @@ void System::run() {
 		int instruction_count = 0;
 
 		auto start = std::chrono::high_resolution_clock::now();
-		done = display->handle_events(key_info);
 		while (instruction_count < instructions_per_frame) {
-
+			done = display->handle_events(key_info, waiting_for_key, pressed_key);
 			uint16_t full_instruction = ((uint16_t)read_from_memory(pc) << 8) + read_from_memory(pc + 1);
 			// increment PC by 2
 			pc += 2;
@@ -330,6 +422,8 @@ void System::run() {
 		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
 		if (duration.count() < time_per_frame) {
 			SDL_Delay(time_per_frame - duration.count());
+			if (delay_timer > 0)delay_timer--;
+			if (sound_timer > 0)sound_timer--;
 		}
 	}
 }

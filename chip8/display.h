@@ -41,5 +41,5 @@ public:
 
 	void draw();
 
-	bool handle_events(bool (&key_info)[16]);
+	bool handle_events(bool (&key_info)[16], bool& waiting_for_key, int& pressed_key);
 };
