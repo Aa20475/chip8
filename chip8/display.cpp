@@ -41,12 +41,8 @@ void Display::clear_screen() {
 }
 
 bool Display::set_pixel(int x, int y, bool bit) {
-    bool curr_bit = pixels[y][x];
-    if (bit) {
-        pixels[y][x] = !curr_bit;
-        return curr_bit;
-    }
-    return false;
+    pixels[y][x] ^= bit;
+    return !pixels[y][x];
 }
 
 void Display::draw() {

@@ -121,7 +121,7 @@ void System::x2NNN(uint16_t instruction, bool& done) {
 void System::x3NNN(uint16_t instruction, bool& done) {
 	uint8_t nibbles[4];
 	extract_nibbles(instruction, nibbles);
-	if(registers[nibbles[1]] == ((uint16_t)nibbles[2] << 8) + nibbles[3]){
+	if(registers[nibbles[1]] == (instruction & 0x00FFu)){
 		pc += 2;
 	}
 }
@@ -129,7 +129,7 @@ void System::x3NNN(uint16_t instruction, bool& done) {
 void System::x4NNN(uint16_t instruction, bool& done) {
 	uint8_t nibbles[4];
 	extract_nibbles(instruction, nibbles);
-	if (registers[nibbles[1]] != ((uint16_t)nibbles[2] << 8) + nibbles[3]) {
+	if (registers[nibbles[1]] != (instruction & 0x00FFu)) {
 		pc += 2;
 	}
 }
@@ -148,13 +148,14 @@ void System::x5NNN(uint16_t instruction, bool& done) {
 void System::x6NNN(uint16_t instruction, bool& done) {
 	uint8_t nibbles[4];
 	extract_nibbles(instruction, nibbles);
-	registers[nibbles[1]] = ((uint16_t)nibbles[2] << 8) + nibbles[3];
+	registers[nibbles[1]] = instruction & 0x00FFu;
 }
 
 void System::x7NNN(uint16_t instruction, bool& done) {
 	uint8_t nibbles[4];
 	extract_nibbles(instruction, nibbles);
-	registers[nibbles[1]] += ((uint16_t)nibbles[2] << 8) + nibbles[3];
+	uint8_t byte = instruction & 0x00FFu;
+	registers[nibbles[1]] += byte;
 }
 
 void System::x8NNN(uint16_t instruction, bool& done) {
@@ -227,14 +228,14 @@ void System::xCNNN(uint16_t instruction, bool& done) {
 	extract_nibbles(instruction, nibbles);
 	
 	registers[nibbles[1]] = rand();
-	registers[nibbles[1]] &= ((uint16_t)nibbles[2] << 8) + nibbles[3];
+	registers[nibbles[1]] &= instruction & 0x00FFu;
 }
 
 void System::xDNNN(uint16_t instruction, bool& done) {
 	uint8_t nibbles[4];
 	extract_nibbles(instruction, nibbles);
 
-	uint8_t x_coordinate = registers[nibbles[1]] & 63, y_coordinate = registers[nibbles[2]] & 31;
+	uint8_t x_coordinate = registers[nibbles[1]] % 64, y_coordinate = registers[nibbles[2]] % 32;
 	registers[15] = 0;
 	uint16_t offset = i_register;
 	for (int i = 0; i < nibbles[3]; i++) {
@@ -409,8 +410,9 @@ void System::run() {
 		int instruction_count = 0;
 
 		auto start = std::chrono::high_resolution_clock::now();
+
+		done = display->handle_events(key_info, waiting_for_key, pressed_key);
 		while (instruction_count < instructions_per_frame) {
-			done = display->handle_events(key_info, waiting_for_key, pressed_key);
 			uint16_t full_instruction = ((uint16_t)read_from_memory(pc) << 8) + read_from_memory(pc + 1);
 			// increment PC by 2
 			pc += 2;
