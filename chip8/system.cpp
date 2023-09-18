@@ -44,7 +44,7 @@ std::string decToHexa(int n)
 	return ans;
 }
 
-System::System() : delay_timer(0), sound_timer(0), pc(0), i_register(0), rom_loaded(false), modern_chip8(true), waiting_for_key(false), pressed_key(-1) {
+System::System(bool modern) : delay_timer(0), sound_timer(0), pc(0), i_register(0), rom_loaded(false), modern_chip8(modern), waiting_for_key(false), pressed_key(-1) {
 	std::cout << "Initializing System... " << std::endl;
 	memory = (uint8_t*)malloc(4096);
 
@@ -295,19 +295,19 @@ void System::xFNNN(uint16_t instruction, bool& done) {
 		registers[15] = (i_register & 0xF000) != 0;
 	}
 	else if (nibbles[2] == 2 && nibbles[3] == 9) {
-		i_register = 0x005F + 5 * nibbles[1];
+		i_register = 0x0050 + 5 * registers[nibbles[1]];
 	}
 	else if (nibbles[2] == 3 && nibbles[3] == 3) {
 		int number = registers[nibbles[1]];
-		write_to_memory(i_register, number % 10);
+		write_to_memory(i_register + 2, number % 10);
 		number /= 10;
 		write_to_memory(i_register + 1, number % 10);
 		number /= 10;
-		write_to_memory(i_register + 2, number % 10);
+		write_to_memory(i_register, number % 10);
 		number /= 10;
 	}
 	else if (nibbles[3] == 5) {
-		for (int i = 0; i < nibbles[1]; i++) {
+		for (int i = 0; i <= nibbles[1]; i++) {
 			if (nibbles[2] == 5) {
 				write_to_memory(modern_chip8 ? i_register + i : i_register++, registers[i]);
 			}
@@ -336,7 +336,6 @@ void System::handle_instruction(uint16_t full_instruction, bool& done) {
 	uint8_t nibbles[4];
 	extract_nibbles(full_instruction, nibbles);
 
-	std::cout << decToHexa(full_instruction) << std::endl;
 	switch (nibbles[0]) {
 	case 0:
 		x0NNN(full_instruction, done);
@@ -399,8 +398,8 @@ void System::run() {
 	
 	const int fps = 60;
 	const int time_per_frame = 1000 / fps;
-	const int instructions_per_second = 500;
-	const int instructions_per_frame = 60;
+	const int instructions_per_second = 700;
+	const int instructions_per_frame = instructions_per_second / fps;
 
 	while (!done) {
 		if (pc > 0x0FFF) {

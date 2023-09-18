@@ -10,9 +10,21 @@ using namespace std;
 
 int main(int argc, char* args[])
 {
-	System system = System();
+	if (argc < 2) {
+		std::cout << "Please provide ROM filepath." << std::endl;
+		return -1;
+	}
 
-	system.read_rom_to_memory("D:/Code/chip8/chip8/roms/octojam2title.ch8");
+	const char* filepath = args[1];
+	bool modern = false;
+	if (argc == 3) {
+		if (args[2] == "modern") {
+			modern = true;
+		}
+	}
+
+	System system = System(modern);
+	system.read_rom_to_memory(filepath);
 
 	system.run();
 	return 0;

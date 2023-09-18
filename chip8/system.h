@@ -73,7 +73,7 @@ class System {
 
 public:
 	// Default constructor
-	System();
+	System(bool modern = false);
 
 	// Writes a given byte to memory location
 	void write_to_memory(uint16_t address, uint8_t value);
